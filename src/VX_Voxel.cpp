@@ -159,16 +159,16 @@ Vec3D<float> CVX_Voxel::cornerOffset(voxelCorner corner) const
 }
 
 //http://klas-physics.googlecode.com/svn/trunk/src/general/Integrator.cpp (reference)
-Vec3D<double> CVX_Voxel::timeStepPart1(float dt)
+void CVX_Voxel::timeStepPart1(float dt)
 {
 	previousDt = dt;
-	if (dt == 0.0f) return {0,0,0};
+	if (dt == 0.0f) return;
 
 	if (ext && ext->isFixedAll()){
 		pos = originalPosition() + ext->translation();
 		orient = ext->rotationQuat();
 		haltMotion();
-		return {0,0,0};
+		return;
 	}
 
 	//Translation
@@ -193,11 +193,15 @@ Vec3D<double> CVX_Voxel::timeStepPart1(float dt)
 			/*** and here we could do link.updateForces, measure (globally) the resulting momentum,
 			 * and compensate (globally) for it...
 			 ***/
-	return (linkF + extF)*dt;
+	linMom += (linkF + extF)*dt;
+
+	curMoment = moment();
+	orient = Quat3D<>((curMoment*dt)*(dt*mat->_momentInertiaInverse))*orient; //update the orientation
+	angMom += curMoment*dt;
 }
 
 
-void CVX_Voxel::timeStepPart2(float dt, Vec3D<double> momentCorrect){
+void CVX_Voxel::timeStepPart2(float dt){
 	if (dt == 0.0f) return;
 	if (ext && ext->isFixedAll()){
 		pos = originalPosition() + ext->translation();
@@ -209,7 +213,8 @@ void CVX_Voxel::timeStepPart2(float dt, Vec3D<double> momentCorrect){
 
 	pos += linMom*(dt*mat->_massInverse); // using the linmom from the previous timestep
 	/* update momentum for the next timesteps*/
-	linMom += (linkF + extF + gravityF + collisionF + fricForce)*dt;
+	// linMom += (linkF + extF + gravityF + collisionF + fricForce)*dt;
+	linMom += (gravityF + collisionF + fricForce)*dt;
 
 	//	we need to check for friction conditions here (after calculating the translation) and stop things accordingly
 	Vec3D<double> fricTranslate = pos - oldPos; // Calculate it indirectly from the dPos w.r.t. the start of the timestep, so we can add things in-between.
@@ -223,9 +228,7 @@ void CVX_Voxel::timeStepPart2(float dt, Vec3D<double> momentCorrect){
 	But: the faulty extraneous rotation only occurs from the *translation* which just takes
 	orientation as an input.. So *that* is what we have to separate.??
 	*/
-	Vec3D<> curMoment = moment();
-	angMom += curMoment*dt;
-	angMom += momentCorrect*dt;
+	angMom += (external()->moment())*dt;
 	orient = Quat3D<>(angMom*(dt*mat->_momentInertiaInverse))*orient; //update the orientation
 
 	applyFixedExternals();
@@ -331,7 +334,7 @@ Vec3D<double> CVX_Voxel::moment()
 	totalMoment = orient.RotateVec3D(totalMoment);
 	
 	//other moments
-	if (externalExists()) totalMoment += external()->moment(); //external moments
+	// if (externalExists()) totalMoment += external()->moment(); //external moments
 	totalMoment -= angularVelocity()*mat->globalDampingRotateC(); //global damping
 	return totalMoment;
 }

@@ -280,14 +280,14 @@ bool CVoxelyze::doTimeStep(float dt)
     }
 
     // Measure total moments
-    Vec3D<double> totalMomentA = {0.0,0.0,0.0};
+    Vec3D<double> totalAngMomentumA = {0.0,0.0,0.0};
     for (int i=0; i<voxCount; i++){
-        totalMomentA += voxelsList[i]->moment();
+        totalAngMomentumA += voxelsList[i]->position().Cross(voxelsList[i]->linMom);
+        totalAngMomentumA += voxelsList[i]->angMom;
     }
 
-    Vec3D<double> totalMomentB = {0.0,0.0,0.0};
 	for (int i=0; i<voxCount; i++){
-        totalMomentB += voxelsList[i]->position().Cross(voxelsList[i]->timeStepPart1(dt));
+        voxelsList[i]->timeStepPart1(dt);
 	}
 	for (int i = 0; i<linkCount; i++){
 		linksList[i]->updateForces();
@@ -295,18 +295,19 @@ bool CVoxelyze::doTimeStep(float dt)
 	}
 
     // Measure total moments after
+    Vec3D<double> totalAngMomentumB = {0.0,0.0,0.0};
     for (int i=0; i<voxCount; i++){
-        totalMomentB += voxelsList[i]->moment();
+        totalAngMomentumB += voxelsList[i]->position().Cross(voxelsList[i]->linMom);
+        totalAngMomentumB += voxelsList[i]->angMom;
     }
-    Vec3D<double> totalMomentDiff = totalMomentB - totalMomentA;
+    Vec3D<double> totalMomentumDiff = totalAngMomentumB - totalAngMomentumA;
     // Apply compensation as external moment
     for (int i=0; i<voxCount; i++){
-        // voxelsList[i]->external()->setMoment((Vec3D<float>)-totalMomentDiff/(double)voxCount);
+        voxelsList[i]->external()->setMoment((Vec3D<float>)-totalMomentumDiff/dt/(double)voxCount);
     }
-    std::cout << "Total moment diff: " << totalMomentDiff.x << ", " << totalMomentDiff.y << ", " << totalMomentDiff.z << "\n";
 
 	for (int i=0; i<voxCount; i++){
-		voxelsList[i]->timeStepPart2(dt, -totalMomentDiff/(double)voxCount);
+		voxelsList[i]->timeStepPart2(dt);
 	}
 
 	currentTime += dt;

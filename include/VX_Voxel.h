@@ -73,8 +73,8 @@ public:
 	CVX_External* external() {if (!ext) ext = new CVX_External(); return ext;} //!< Returns a pointer to this voxel's unique external object that contains fixes, forces, and/or displacements. Allocates a new empty one if it doesn't already exist. Use externalExists() to determine if external() has been previously called at any time.
 
 
-	Vec3D<double> timeStepPart1(float dt); //!< Advances this voxel's state according to all forces and moments acting on it. Large timesteps will cause instability. Use CVoxelyze::recommendedTimeStep() to get the recommended largest stable timestep. @param[in] dt Timestep (in second) to advance. Returns the linear moment added in this subtimestep
-	void timeStepPart2(float dt, Vec3D<double> momentCorrect);
+	void timeStepPart1(float dt); //!< Advances this voxel's state according to all forces and moments acting on it. Large timesteps will cause instability. Use CVoxelyze::recommendedTimeStep() to get the recommended largest stable timestep. @param[in] dt Timestep (in second) to advance.
+	void timeStepPart2(float dt);
 
 	//physical location
 	Vec3D<double> position() const {return pos;} //!< Returns the center position of this voxel in meters (GCS). This is the origin of the local coordinate system (LCS).
@@ -135,6 +135,7 @@ public:
 	Vec3D<double> collisionF;
 	Vec3D<double> fricForce;
 	Vec3D<double> oldPos;
+	Vec3D<> curMoment;
 
 	float transverseArea(CVX_Link::linkAxis axis); //!< Returns the transverse area of this voxel with respect to the specified axis. This would normally be called only internally, but can be used to calculate the correct relationship between force and stress for this voxel if Poisson's ratio is non-zero.
 	float transverseStrainSum(CVX_Link::linkAxis axis); //!< Returns the sum of the current strain of this voxel in the two mutually perpindicular axes to the specified axis. This would normally be called only internally, but can be used to correctly calculate stress for this voxel if Poisson's ratio is non-zero.
