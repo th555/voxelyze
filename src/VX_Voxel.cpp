@@ -187,10 +187,8 @@ void CVX_Voxel::timeStep(float dt)
 	Vec3D<double> translate(linMom*(dt*mat->_massInverse)); //movement of the voxel this timestep
 
 	//	we need to check for friction conditions here (after calculating the translation) and stop things accordingly
-	if(checkStaticFriction(dt, fricForce, translate)){
-		translate.x = translate.y = 0;
-	}
-
+	Vec3D<double> translateCompensate = checkStaticFriction(dt, fricForce, translate);
+	translate += translateCompensate;
 	pos += translate;
 
 	//Rotation
@@ -226,8 +224,8 @@ void CVX_Voxel::applyFixedExternals(){
 	}
 }
 
-bool CVX_Voxel::checkStaticFriction(float dt, Vec3D<double> fricForce, Vec3D<double> translate){
-	bool cancelTranslateXY = false;
+Vec3D<double> CVX_Voxel::checkStaticFriction(float dt, Vec3D<double> fricForce, Vec3D<double> translate){
+	Vec3D<double> translateCompensate(0,0,0);
 	if (isFloorEnabled() && floorPenetration() >= 0){ //we must catch a slowing voxel here since it all boils down to needing access to the dt of this timestep.
 		double work = fricForce.x*translate.x + fricForce.y*translate.y; //F dot disp
 		double hKe = 0.5*mat->_massInverse*(linMom.x*linMom.x + linMom.y*linMom.y); //horizontal kinetic energy
@@ -236,11 +234,12 @@ bool CVX_Voxel::checkStaticFriction(float dt, Vec3D<double> fricForce, Vec3D<dou
 
 		if (isFloorStaticFriction()){ //if we're in a state of static friction, zero out all horizontal motion
 			linMom.x = linMom.y = 0;
-			cancelTranslateXY = true;
+			translateCompensate.x = -translate.x;
+			translateCompensate.y = -translate.y;
 		}
 	}
 	else setFloorStaticFriction(false);
-	return cancelTranslateXY;
+	return translateCompensate;
 }
 
 /* Forces that should not add net momentum to the model (i.e.
