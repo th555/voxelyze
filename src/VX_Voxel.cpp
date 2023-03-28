@@ -174,15 +174,13 @@ void CVX_Voxel::timeStep(float dt)
 	//Translation
 	Vec3D<double> curForce = force();
 	curForce += collisionForce();
-	Vec3D<double> fricForce = curForce;
+	Vec3D<double> fricForce(0,0,0); // includes normal force as well!
 
 	if (isFloorEnabled()){
 		/* Friction and normal force */
-		Vec3D<double> floorF = floorForce(dt, curForce); //floor force needs dt to calculate threshold to "stop" a slow voxel into static friction.
-		curForce += floorF;
+		fricForce = floorForce(dt, curForce); //floor force needs dt to calculate threshold to "stop" a slow voxel into static friction.
+		curForce += fricForce;
 	}
-
-	fricForce = curForce - fricForce;
 
 	assert(!(curForce.x != curForce.x) || !(curForce.y != curForce.y) || !(curForce.z != curForce.z)); //assert non QNAN
 	linMom += curForce*dt;
@@ -287,7 +285,7 @@ Vec3D<double> CVX_Voxel::moment()
 
 Vec3D<double> CVX_Voxel::floorForce(float dt, Vec3D<double> curForce)
 {
-	Vec3D<double> floorF(0,0,0); // Normal force and friction force
+	Vec3D<double> fricForce(0,0,0); // Normal force and friction force
 	float CurPenetration = floorPenetration(); //for now use the average.
 
 	if (CurPenetration>=0){ 
@@ -295,9 +293,9 @@ Vec3D<double> CVX_Voxel::floorForce(float dt, Vec3D<double> curForce)
 		Vec3D<double> horizontalVel(vel.x, vel.y, 0);
 		
 		float normalForce = mat->penetrationStiffness()*CurPenetration;
-		floorF.z += normalForce - mat->collisionDampingTranslateC()*vel.z; //in the z direction: k*x-C*v - spring and damping
+		fricForce.z += normalForce - mat->collisionDampingTranslateC()*vel.z; //in the z direction: k*x-C*v - spring and damping
 
-		Vec3D<double> pTotalForce = curForce + floorF;
+		Vec3D<double> pTotalForce = curForce + fricForce;
 		if (isFloorStaticFriction()){ //If this voxel is currently in static friction mode (no lateral motion) 
 			assert(horizontalVel.Length2() == 0);
 			float surfaceForceSq = (float)(pTotalForce.x*pTotalForce.x + pTotalForce.y*pTotalForce.y); //use squares to avoid a square root
@@ -306,12 +304,12 @@ Vec3D<double> CVX_Voxel::floorForce(float dt, Vec3D<double> curForce)
 			if (surfaceForceSq > frictionForceSq) setFloorStaticFriction(false); //if we're breaking static friction, leave the forces as they currently have been calculated to initiate motion this time step
 		}
 		else { //even if we just transitioned don't process here or else with a complete lack of momentum it'll just go back to static friction
-			floorF -=  mat->muKinetic*normalForce*horizontalVel.Normalized(); //add a friction force opposing velocity according to the normal force and the kinetic coefficient of friction
+			fricForce -=  mat->muKinetic*normalForce*horizontalVel.Normalized(); //add a friction force opposing velocity according to the normal force and the kinetic coefficient of friction
 		}
 	}
 	else setFloorStaticFriction(false);
 
-	return floorF;
+	return fricForce;
 }
 
 Vec3D<float> CVX_Voxel::strain(bool poissonsStrain) const
