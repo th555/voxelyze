@@ -1,4 +1,4 @@
-A fork of [jonhiller/Voxelyze](https://github.com/jonhiller/Voxelyze) including a rather messy hack to ensure that external forces don't add any net angular momentum to the system. I use this to add pneumatic activation which would otherwise send the robots spinning any which way, either due to some slight imbalance in the application of the external forces, or something internal to Voxelyze (I haven't been able to find out which...). It's, unfortunately, much slower now.
+A fork of [jonhiller/Voxelyze](https://github.com/jonhiller/Voxelyze) including a rather messy hack to ensure that external forces don't add any net angular momentum to the system. I use this to add pneumatic activation which would otherwise send the robots spinning any which way, either due to some slight imbalance in the application of the external forces, or something internal to Voxelyze (I haven't been able to find out which...).
 
 
 Voxelyze
