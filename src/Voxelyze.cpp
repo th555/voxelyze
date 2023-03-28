@@ -282,17 +282,21 @@ bool CVoxelyze::doTimeStep(float dt)
     // Measure total moments
     Vec3D<double> totalAngMomentumA = {0.0,0.0,0.0};
     for (int i=0; i<voxCount; i++){
+    	// TODO if it gets unstable far away from the origin, might want to calculate this
+    	// arm w.r.t. a point on/in the robot.
         totalAngMomentumA += voxelsList[i]->position().Cross(voxelsList[i]->linMom);
         totalAngMomentumA += voxelsList[i]->angMom;
     }
 
+    // Apply the part of the timestep that should *not* add any net angular momentum
 	for (int i=0; i<voxCount; i++){
         voxelsList[i]->timeStepPart1(dt);
 	}
-	for (int i = 0; i<linkCount; i++){
-		linksList[i]->updateForces();
-		if (linksList[i]->axialStrain() > 100) Diverged = true; //catch divergent condition! (if any thread sets true we will fail, so don't need mutex...
-	}
+
+	/* Apparently this was overkill */
+	// for (int i = 0; i<linkCount; i++){
+	// 	linksList[i]->updateForces();
+	// }
 
     // Measure total moments after
     Vec3D<double> totalAngMomentumB = {0.0,0.0,0.0};
@@ -301,11 +305,14 @@ bool CVoxelyze::doTimeStep(float dt)
         totalAngMomentumB += voxelsList[i]->angMom;
     }
     Vec3D<double> totalMomentumDiff = totalAngMomentumB - totalAngMomentumA;
+
     // Apply compensation as external moment
     for (int i=0; i<voxCount; i++){
         voxelsList[i]->external()->setMoment((Vec3D<float>)-totalMomentumDiff/dt/(double)voxCount);
     }
 
+    // Perform the rest of the timestep, which will apply the compensatory moment as well as
+    // apply collision, friction, and floor normals (which can add net angular momentum, obviously)
 	for (int i=0; i<voxCount; i++){
 		voxelsList[i]->timeStepPart2(dt);
 	}

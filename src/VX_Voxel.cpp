@@ -187,7 +187,6 @@ void CVX_Voxel::timeStepPart1(float dt)
 
 	// assert(!(curForce.x != curForce.x) || !(curForce.y != curForce.y) || !(curForce.z != curForce.z)); //assert non QNAN
 
-	/* Translation from pre-existing momentum */
 	/* Translations from momentum added in this timestep */
 	pos += (linkF + extF)*dt*(dt*mat->_massInverse);
 			/*** and here we could do link.updateForces, measure (globally) the resulting momentum,
@@ -211,6 +210,7 @@ void CVX_Voxel::timeStepPart2(float dt){
 	}
 	pos += (gravityF + collisionF + fricForce)*dt*(dt*mat->_massInverse);
 
+	/* Translation from pre-existing momentum */
 	pos += linMom*(dt*mat->_massInverse); // using the linmom from the previous timestep
 	/* update momentum for the next timesteps*/
 	linMom += (gravityF + collisionF + fricForce)*dt;
