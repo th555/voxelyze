@@ -171,7 +171,7 @@ private:
 
 	float temp; //0 is no expansion
 
-	void floorForce(float dt, Vec3D<double>* pTotalForce); //modifies pTotalForce to include the object's interaction with a floor. This should be calculated as the last step of sumForce so that pTotalForce is complete.
+	Vec3D<double> floorForce(float dt, Vec3D<double> curForce); //modifies pTotalForce (not anymore, converted to explicit adding/subtracting/return) to include the object's interaction with a floor. This should be calculated as the last step of sumForce so that pTotalForce is complete.
 
 
 	Vec3D<float> strain(bool poissonsStrain) const; //LCS returns voxel strain. if tensionStrain true and no actual tension in that
