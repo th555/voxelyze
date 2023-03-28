@@ -187,9 +187,16 @@ void CVX_Voxel::timeStep(float dt)
 
 	// assert(!(curForce.x != curForce.x) || !(curForce.y != curForce.y) || !(curForce.z != curForce.z)); //assert non QNAN
 
+	/* Translation from pre-existing momentum */
+	pos += linMom*(dt*mat->_massInverse);
+	/* Translations from momentum added in this timestep */
+	pos += (linkF + extF)*dt*(dt*mat->_massInverse);
+			/*** and here we could do link.updateForces, measure (globally) the resulting momentum,
+			 * and compensate (globally) for it...
+			 ***/
+	pos += (gravityF + collisionF + fricForce)*dt*(dt*mat->_massInverse);
+	/* update momentum for the rest of the simulation */
 	linMom += (linkF + extF + gravityF + collisionF + fricForce)*dt;
-	Vec3D<double> translate(linMom*(dt*mat->_massInverse)); //movement of the voxel this timestep
-	pos += translate;
 
 	//	we need to check for friction conditions here (after calculating the translation) and stop things accordingly
 	Vec3D<double> fricTranslate = pos - oldPos; // Calculate it indirectly from the dPos w.r.t. the start of the timestep, so we can add things in-between.
