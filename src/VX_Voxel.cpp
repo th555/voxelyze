@@ -222,12 +222,6 @@ void CVX_Voxel::timeStepPart2(float dt){
 	pos += translateCompensate;
 
 	//Rotation
-	/* The moment results from the internal bonds after they have been deformed by translation
-	forces. Can we compute separately the internal+pneu, and the collision translation, and then
-	compute separately the moments resulting from these deformations?
-	But: the faulty extraneous rotation only occurs from the *translation* which just takes
-	orientation as an input.. So *that* is what we have to separate.??
-	*/
 	angMom += (external()->moment())*dt;
 	orient = Quat3D<>(angMom*(dt*mat->_momentInertiaInverse))*orient; //update the orientation
 

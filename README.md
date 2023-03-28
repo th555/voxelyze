@@ -1,3 +1,6 @@
+A fork of [jonhiller/Voxelyze](https://github.com/jonhiller/Voxelyze) including a rather messy hack to ensure that external forces don't add any net angular momentum to the system.
+
+
 Voxelyze
 ========
 
