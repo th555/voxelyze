@@ -118,7 +118,7 @@ Vec3D<float> CVX_Voxel::externalForce()
 {
 	Vec3D<float> returnForce(ext->force());
 	if (ext->isFixed(X_TRANSLATE) || ext->isFixed(Y_TRANSLATE) || ext->isFixed(Z_TRANSLATE)){
-		Vec3D<float> thisForce = (Vec3D<float>) -force();
+		Vec3D<float> thisForce = (Vec3D<float>) -(linkForce() + extForce() + gravityForce() + collisionForce());
 		if (ext->isFixed(X_TRANSLATE)) returnForce.x = thisForce.x;
 		if (ext->isFixed(Y_TRANSLATE)) returnForce.y = thisForce.y;
 		if (ext->isFixed(Z_TRANSLATE)) returnForce.z = thisForce.z;
@@ -174,17 +174,20 @@ void CVX_Voxel::timeStep(float dt)
 	//Translation
 	Vec3D<double> oldPos(pos);
 
-	Vec3D<double> curForce = force() + extForce() + gravityForce() + collisionForce();
+	/* was curForce */
+	Vec3D<double> linkF = linkForce();
+	Vec3D<double> extF = extForce();
+	Vec3D<double> gravityF = gravityForce();
+	Vec3D<double> collisionF = collisionForce();
 
 	/* Friction and normal force */
 	/* This should be calculated as the last step of sumForce so that pTotalForce is complete. */
 	// fricForce includes normal force as well!
-	Vec3D<double> fricForce = floorForce(dt, curForce); //floor force needs dt to calculate threshold to "stop" a slow voxel into static friction.
-	curForce += fricForce;
+	Vec3D<double> fricForce = floorForce(dt, linkF + extF + gravityF + collisionF); //floor force needs dt to calculate threshold to "stop" a slow voxel into static friction.
 
-	assert(!(curForce.x != curForce.x) || !(curForce.y != curForce.y) || !(curForce.z != curForce.z)); //assert non QNAN
+	// assert(!(curForce.x != curForce.x) || !(curForce.y != curForce.y) || !(curForce.z != curForce.z)); //assert non QNAN
 
-	linMom += curForce*dt;
+	linMom += (linkF + extF + gravityF + collisionF + fricForce)*dt;
 	Vec3D<double> translate(linMom*(dt*mat->_massInverse)); //movement of the voxel this timestep
 	pos += translate;
 
@@ -251,7 +254,7 @@ Vec3D<double> CVX_Voxel::checkStaticFriction(float dt, Vec3D<double> fricForce, 
 
 /* Forces that should not add net momentum to the model (i.e.
 all of them except collision */
-Vec3D<double> CVX_Voxel::force()
+Vec3D<double> CVX_Voxel::linkForce()
 {
 	//forces from internal bonds
 	Vec3D<double> totalForce(0,0,0);
