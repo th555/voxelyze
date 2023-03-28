@@ -173,6 +173,7 @@ void CVX_Voxel::timeStep(float dt)
 
 	//Translation
 	Vec3D<double> curForce = force();
+	curForce += collisionForce();
 	Vec3D<double> fricForce = curForce;
 
 	if (isFloorEnabled()) floorForce(dt, &curForce); //floor force needs dt to calculate threshold to "stop" a slow voxel into static friction.
@@ -231,6 +232,8 @@ void CVX_Voxel::timeStep(float dt)
 	poissonsStrainInvalid = true;
 }
 
+/* Forces that should not add net momentum to the model (i.e.
+all of them except collision */
 Vec3D<double> CVX_Voxel::force()
 {
 	//forces from internal bonds
@@ -246,12 +249,19 @@ Vec3D<double> CVX_Voxel::force()
 	totalForce -= velocity()*mat->globalDampingTranslateC(); //global damping f-cv
 	totalForce.z += mat->gravityForce(); //gravity, according to f=mg
 
+
+	return totalForce;
+}
+
+/* This one can result in a net momentum */
+Vec3D<double> CVX_Voxel::collisionForce()
+{
+	Vec3D<double> totalForce(0,0,0);
 	if (isCollisionsEnabled()){
 		for (std::vector<CVX_Collision*>::iterator it=colWatch->begin(); it!=colWatch->end(); it++){
 			totalForce -= (*it)->contactForce(this);
 		}
 	}
-
 	return totalForce;
 }
 
