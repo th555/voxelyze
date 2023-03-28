@@ -172,26 +172,35 @@ void CVX_Voxel::timeStep(float dt)
 	}
 
 	//Translation
-	Vec3D<double> curForce = force();
-	curForce += collisionForce();
-	Vec3D<double> fricForce(0,0,0); // includes normal force as well!
+	Vec3D<double> oldPos(pos);
 
+	Vec3D<double> curForce = force();
+
+	curForce += collisionForce();
 	/* Friction and normal force */
 	/* This should be calculated as the last step of sumForce so that pTotalForce is complete. */
-	fricForce = floorForce(dt, curForce); //floor force needs dt to calculate threshold to "stop" a slow voxel into static friction.
+	// fricForce includes normal force as well!
+	Vec3D<double> fricForce = floorForce(dt, curForce); //floor force needs dt to calculate threshold to "stop" a slow voxel into static friction.
 	curForce += fricForce;
 
 	assert(!(curForce.x != curForce.x) || !(curForce.y != curForce.y) || !(curForce.z != curForce.z)); //assert non QNAN
 
 	linMom += curForce*dt;
 	Vec3D<double> translate(linMom*(dt*mat->_massInverse)); //movement of the voxel this timestep
-
-	//	we need to check for friction conditions here (after calculating the translation) and stop things accordingly
-	Vec3D<double> translateCompensate = checkStaticFriction(dt, fricForce, translate);
-	translate += translateCompensate;
 	pos += translate;
 
+	//	we need to check for friction conditions here (after calculating the translation) and stop things accordingly
+	Vec3D<double> fricTranslate = pos - oldPos; // Calculate it indirectly from the dPos w.r.t. the start of the timestep, so we can add things in-between.
+	Vec3D<double> translateCompensate = checkStaticFriction(dt, fricForce, fricTranslate); // May set linmom.x and y to 0 internally!
+	pos += translateCompensate;
+
 	//Rotation
+	/* The moment results from the internal bonds after they have been deformed by translation
+	forces. Can we compute separately the internal+pneu, and the collision translation, and then
+	compute separately the moments resulting from these deformations?
+	But: the faulty extraneous rotation only occurs from the *translation* which just takes
+	orientation as an input.. So *that* is what we have to separate.??
+	*/
 	Vec3D<> curMoment = moment();
 	angMom += curMoment*dt;
 
