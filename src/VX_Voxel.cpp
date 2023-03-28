@@ -213,7 +213,6 @@ void CVX_Voxel::timeStepPart2(float dt){
 
 	pos += linMom*(dt*mat->_massInverse); // using the linmom from the previous timestep
 	/* update momentum for the next timesteps*/
-	// linMom += (linkF + extF + gravityF + collisionF + fricForce)*dt;
 	linMom += (gravityF + collisionF + fricForce)*dt;
 
 	//	we need to check for friction conditions here (after calculating the translation) and stop things accordingly
