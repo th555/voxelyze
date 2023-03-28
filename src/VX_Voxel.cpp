@@ -174,9 +174,8 @@ void CVX_Voxel::timeStep(float dt)
 	//Translation
 	Vec3D<double> oldPos(pos);
 
-	Vec3D<double> curForce = force();
+	Vec3D<double> curForce = force() + extForce() + gravityForce() + collisionForce();
 
-	curForce += collisionForce();
 	/* Friction and normal force */
 	/* This should be calculated as the last step of sumForce so that pTotalForce is complete. */
 	// fricForce includes normal force as well!
@@ -203,7 +202,6 @@ void CVX_Voxel::timeStep(float dt)
 	*/
 	Vec3D<> curMoment = moment();
 	angMom += curMoment*dt;
-
 	orient = Quat3D<>(angMom*(dt*mat->_momentInertiaInverse))*orient; //update the orientation
 
 	applyFixedExternals();
@@ -263,14 +261,29 @@ Vec3D<double> CVX_Voxel::force()
 	totalForce = orient.RotateVec3D(totalForce); //from local to global coordinates
 	assert(!(totalForce.x != totalForce.x) || !(totalForce.y != totalForce.y) || !(totalForce.z != totalForce.z)); //assert non QNAN
 
-	//other forces
-	if (externalExists()) totalForce += external()->force(); //external forces
 	totalForce -= velocity()*mat->globalDampingTranslateC(); //global damping f-cv
-	totalForce.z += mat->gravityForce(); //gravity, according to f=mg
-
 
 	return totalForce;
 }
+
+Vec3D<double> CVX_Voxel::extForce()
+{
+	Vec3D<double> totalForce(0,0,0);
+	if (externalExists()){
+		totalForce += external()->force(); //external forces
+	}
+
+	return totalForce;
+}
+
+Vec3D<double> CVX_Voxel::gravityForce()
+{
+	Vec3D<double> totalForce(0,0,0);
+	totalForce.z += mat->gravityForce(); //gravity, according to f=mg
+	return totalForce;
+}
+
+
 
 /* This one can result in a net momentum */
 Vec3D<double> CVX_Voxel::collisionForce()

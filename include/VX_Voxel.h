@@ -123,6 +123,8 @@ public:
 
 	Vec3D<double> force(); //!< Calculates and returns the sum of the current forces on this voxel. This would normally only be called internally, but can be used to query the state of a voxel for visualization or debugging.
 	Vec3D<double> collisionForce(); // Added by me (fixext)
+	Vec3D<double> extForce(); // Added by me (fixext)
+	Vec3D<double> gravityForce(); // Added by me (fixext)
 	Vec3D<double> moment(); //!< Calculates and returns the sum of the current moments on this voxel. This would normally only be called internally, but can be used to query the state of a voxel for visualization or debugging.
 
 	float transverseArea(CVX_Link::linkAxis axis); //!< Returns the transverse area of this voxel with respect to the specified axis. This would normally be called only internally, but can be used to calculate the correct relationship between force and stress for this voxel if Poisson's ratio is non-zero.
