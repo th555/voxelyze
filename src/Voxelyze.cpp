@@ -275,7 +275,8 @@ bool CVoxelyze::doTimeStep(float dt)
 #pragma omp parallel for
 #endif
 	for (int i=0; i<voxCount; i++){
-		voxelsList[i]->timeStep(dt);
+		voxelsList[i]->timeStepPart1(dt);
+		voxelsList[i]->timeStepPart2(dt);
 	}
 
 

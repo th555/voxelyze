@@ -159,7 +159,7 @@ Vec3D<float> CVX_Voxel::cornerOffset(voxelCorner corner) const
 }
 
 //http://klas-physics.googlecode.com/svn/trunk/src/general/Integrator.cpp (reference)
-void CVX_Voxel::timeStep(float dt)
+void CVX_Voxel::timeStepPart1(float dt)
 {
 	previousDt = dt;
 	if (dt == 0.0f) return;
@@ -172,18 +172,18 @@ void CVX_Voxel::timeStep(float dt)
 	}
 
 	//Translation
-	Vec3D<double> oldPos(pos);
+	oldPos = pos;
 
 	/* was curForce */
-	Vec3D<double> linkF = linkForce();
-	Vec3D<double> extF = extForce();
-	Vec3D<double> gravityF = gravityForce();
-	Vec3D<double> collisionF = collisionForce();
+	linkF = linkForce();
+	extF = extForce();
+	gravityF = gravityForce();
+	collisionF = collisionForce();
 
 	/* Friction and normal force */
 	/* This should be calculated as the last step of sumForce so that pTotalForce is complete. */
 	// fricForce includes normal force as well!
-	Vec3D<double> fricForce = floorForce(dt, linkF + extF + gravityF + collisionF); //floor force needs dt to calculate threshold to "stop" a slow voxel into static friction.
+	fricForce = floorForce(dt, linkF + extF + gravityF + collisionF); //floor force needs dt to calculate threshold to "stop" a slow voxel into static friction.
 
 	// assert(!(curForce.x != curForce.x) || !(curForce.y != curForce.y) || !(curForce.z != curForce.z)); //assert non QNAN
 
@@ -194,6 +194,17 @@ void CVX_Voxel::timeStep(float dt)
 			/*** and here we could do link.updateForces, measure (globally) the resulting momentum,
 			 * and compensate (globally) for it...
 			 ***/
+}
+
+
+void CVX_Voxel::timeStepPart2(float dt){
+	if (dt == 0.0f) return;
+	if (ext && ext->isFixedAll()){
+		pos = originalPosition() + ext->translation();
+		orient = ext->rotationQuat();
+		haltMotion();
+		return;
+	}
 	pos += (gravityF + collisionF + fricForce)*dt*(dt*mat->_massInverse);
 	/* update momentum for the rest of the simulation */
 	linMom += (linkF + extF + gravityF + collisionF + fricForce)*dt;
