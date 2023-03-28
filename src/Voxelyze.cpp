@@ -274,11 +274,40 @@ bool CVoxelyze::doTimeStep(float dt)
 #ifdef USE_OMP
 #pragma omp parallel for
 #endif
+
+    for (int i=0; i<voxCount; i++){
+        voxelsList[i]->external()->clearMoment();
+    }
+
+    // Measure total moments
+    Vec3D<double> totalMomentA = {0.0,0.0,0.0};
+    for (int i=0; i<voxCount; i++){
+        totalMomentA += voxelsList[i]->moment();
+    }
+
+    Vec3D<double> totalMomentB = {0.0,0.0,0.0};
 	for (int i=0; i<voxCount; i++){
-		voxelsList[i]->timeStepPart1(dt);
-		voxelsList[i]->timeStepPart2(dt);
+        totalMomentB += voxelsList[i]->position().Cross(voxelsList[i]->timeStepPart1(dt));
+	}
+	for (int i = 0; i<linkCount; i++){
+		linksList[i]->updateForces();
+		if (linksList[i]->axialStrain() > 100) Diverged = true; //catch divergent condition! (if any thread sets true we will fail, so don't need mutex...
 	}
 
+    // Measure total moments after
+    for (int i=0; i<voxCount; i++){
+        totalMomentB += voxelsList[i]->moment();
+    }
+    Vec3D<double> totalMomentDiff = totalMomentB - totalMomentA;
+    // Apply compensation as external moment
+    for (int i=0; i<voxCount; i++){
+        // voxelsList[i]->external()->setMoment((Vec3D<float>)-totalMomentDiff/(double)voxCount);
+    }
+    std::cout << "Total moment diff: " << totalMomentDiff.x << ", " << totalMomentDiff.y << ", " << totalMomentDiff.z << "\n";
+
+	for (int i=0; i<voxCount; i++){
+		voxelsList[i]->timeStepPart2(dt, -totalMomentDiff/(double)voxCount);
+	}
 
 	currentTime += dt;
 	return true;

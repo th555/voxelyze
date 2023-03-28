@@ -159,16 +159,16 @@ Vec3D<float> CVX_Voxel::cornerOffset(voxelCorner corner) const
 }
 
 //http://klas-physics.googlecode.com/svn/trunk/src/general/Integrator.cpp (reference)
-void CVX_Voxel::timeStepPart1(float dt)
+Vec3D<double> CVX_Voxel::timeStepPart1(float dt)
 {
 	previousDt = dt;
-	if (dt == 0.0f) return;
+	if (dt == 0.0f) return {0,0,0};
 
 	if (ext && ext->isFixedAll()){
 		pos = originalPosition() + ext->translation();
 		orient = ext->rotationQuat();
 		haltMotion();
-		return;
+		return {0,0,0};
 	}
 
 	//Translation
@@ -188,16 +188,16 @@ void CVX_Voxel::timeStepPart1(float dt)
 	// assert(!(curForce.x != curForce.x) || !(curForce.y != curForce.y) || !(curForce.z != curForce.z)); //assert non QNAN
 
 	/* Translation from pre-existing momentum */
-	pos += linMom*(dt*mat->_massInverse);
 	/* Translations from momentum added in this timestep */
 	pos += (linkF + extF)*dt*(dt*mat->_massInverse);
 			/*** and here we could do link.updateForces, measure (globally) the resulting momentum,
 			 * and compensate (globally) for it...
 			 ***/
+	return (linkF + extF)*dt;
 }
 
 
-void CVX_Voxel::timeStepPart2(float dt){
+void CVX_Voxel::timeStepPart2(float dt, Vec3D<double> momentCorrect){
 	if (dt == 0.0f) return;
 	if (ext && ext->isFixedAll()){
 		pos = originalPosition() + ext->translation();
@@ -206,7 +206,9 @@ void CVX_Voxel::timeStepPart2(float dt){
 		return;
 	}
 	pos += (gravityF + collisionF + fricForce)*dt*(dt*mat->_massInverse);
-	/* update momentum for the rest of the simulation */
+
+	pos += linMom*(dt*mat->_massInverse); // using the linmom from the previous timestep
+	/* update momentum for the next timesteps*/
 	linMom += (linkF + extF + gravityF + collisionF + fricForce)*dt;
 
 	//	we need to check for friction conditions here (after calculating the translation) and stop things accordingly
@@ -223,6 +225,7 @@ void CVX_Voxel::timeStepPart2(float dt){
 	*/
 	Vec3D<> curMoment = moment();
 	angMom += curMoment*dt;
+	angMom += momentCorrect*dt;
 	orient = Quat3D<>(angMom*(dt*mat->_momentInertiaInverse))*orient; //update the orientation
 
 	applyFixedExternals();
