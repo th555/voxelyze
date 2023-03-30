@@ -294,9 +294,9 @@ bool CVoxelyze::doTimeStep(float dt)
 	}
 
 	/* Apparently this was overkill */
-	// for (int i = 0; i<linkCount; i++){
-	// 	linksList[i]->updateForces();
-	// }
+	for (int i = 0; i<linkCount; i++){
+		linksList[i]->updateForces();
+	}
 
     // Measure total moments after
     Vec3D<double> totalAngMomentumB = {0.0,0.0,0.0};
