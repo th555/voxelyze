@@ -279,12 +279,20 @@ bool CVoxelyze::doTimeStep(float dt)
         voxelsList[i]->external()->clearMoment();
     }
 
+	// Measure angular momentum around the center of mass, this is important
+	// when in motion
+	Vec3D<double> sum = Vec3D<double>();
+    for(int i=0; i<voxCount; i++){
+        sum += voxelsList[i]->position();
+    }
+    Vec3D<double> CoG = sum / voxCount;
+
     // Measure total moments
     Vec3D<double> totalAngMomentumA = {0.0,0.0,0.0};
     for (int i=0; i<voxCount; i++){
     	// TODO if it gets unstable far away from the origin, might want to calculate this
     	// arm w.r.t. a point on/in the robot.
-        totalAngMomentumA += voxelsList[i]->position().Cross(voxelsList[i]->linMom);
+        totalAngMomentumA += (voxelsList[i]->position() - CoG).Cross(voxelsList[i]->linMom);
         totalAngMomentumA += voxelsList[i]->angMom;
     }
 
@@ -293,15 +301,15 @@ bool CVoxelyze::doTimeStep(float dt)
         voxelsList[i]->timeStepPart1(dt);
 	}
 
-	/* Apparently this was overkill */
+	/* Not sure if this is necessary/good */
 	for (int i = 0; i<linkCount; i++){
 		linksList[i]->updateForces();
 	}
 
-    // Measure total moments after
+    /* Measure total moments after */
     Vec3D<double> totalAngMomentumB = {0.0,0.0,0.0};
     for (int i=0; i<voxCount; i++){
-        totalAngMomentumB += voxelsList[i]->position().Cross(voxelsList[i]->linMom);
+        totalAngMomentumB += (voxelsList[i]->position() - CoG).Cross(voxelsList[i]->linMom);
         totalAngMomentumB += voxelsList[i]->angMom;
     }
     Vec3D<double> totalMomentumDiff = totalAngMomentumB - totalAngMomentumA;
