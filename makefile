@@ -12,7 +12,7 @@ VOXELYZE_LIB_VERSION = lib$(VOXELYZE_VERSION).a
 CXX=g++
 CC=g++
 INCLUDE= -I./include
-FLAGS = -O3 -std=c++11 -Wall $(INCLUDE)
+FLAGS = -O3 -std=c++11 -Wall -march=znver4 $(INCLUDE)
 
 VOXELYZE_SRC = \
 	src/Voxelyze.cpp \
